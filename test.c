@@ -12,6 +12,14 @@
 
 #include "aes.h"
 
+#ifdef AES128
+uint8_t len = 16;
+#elif defined(AES192)
+uint8_t len = 24;
+#elif defined(AES256)
+uint8_t len = 32;
+#endif
+
 static void phex(uint8_t *str);
 static void test_ecb_verbose(void);
 
@@ -35,12 +43,12 @@ void openFile(FILE *fPointer, uint8_t *text, const char *path, const char *mode)
   if (strcmp(mode, "r") == 0)
   {
     char *t = readlinesFromFile(fPointer);
-    for (int i = 0; i < 16; i++)
+    for (int i = 0; i < len; i++)
       text[i] = (uint8_t)t[i];
   }
   else if (strcmp(mode, "w") == 0)
   {
-    for (int i = 0; i < 16; i++)
+    for (int i = 0; i < len; i++)
       fputc((char)text[i], fPointer);
   }
 
@@ -49,7 +57,6 @@ void openFile(FILE *fPointer, uint8_t *text, const char *path, const char *mode)
 
 int main(void)
 {
-
 #ifdef AES128
   printf("\nTesting AES128\n\n");
 #elif defined(AES192)
@@ -60,6 +67,7 @@ int main(void)
   printf("You need to specify a symbol between AES128, AES192 or AES256. Exiting");
   return 0;
 #endif
+
   test_ecb_verbose();
 
   return 0;
@@ -68,15 +76,6 @@ int main(void)
 // prints string as hex
 static void phex(uint8_t *str)
 {
-
-#ifdef AES128
-  uint8_t len = 16;
-#elif defined(AES192)
-  uint8_t len = 24;
-#elif defined(AES256)
-  uint8_t len = 32;
-#endif
-
   unsigned char i;
   for (i = 0; i < len; ++i)
     printf("%.2x", str[i]);
@@ -88,12 +87,12 @@ static void test_ecb_verbose()
   struct timeval startEncrypt, endEncrypt;
   struct timeval startDecrypt, endDecrypt;
   FILE *fPointer = NULL;
-  uint8_t *key = (uint8_t *)malloc(16 * sizeof(uint8_t));
-  uint8_t *plaintext = (uint8_t *)malloc(16 * sizeof(uint8_t));
-  uint8_t *ciphertext = (uint8_t *)malloc(16 * sizeof(uint8_t));
-  uint8_t buf[16], buf2[16]; // * buf to store encrypted text, buf2 to store decrypted text
-  memset(buf, 0, 16);
-  memset(buf2, 0, 16);
+  uint8_t *key = (uint8_t *)malloc(len * sizeof(uint8_t));
+  uint8_t *plaintext = (uint8_t *)malloc(len * sizeof(uint8_t));
+  uint8_t *ciphertext = (uint8_t *)malloc(len * sizeof(uint8_t));
+  uint8_t buf[len], buf2[len]; // * buf to store encrypted text, buf2 to store decrypted text
+  memset(buf, 0, len);
+  memset(buf2, 0, len);
 
   openFile(fPointer, key, "key.txt", "r");
   printf("key:\n");
@@ -109,7 +108,7 @@ static void test_ecb_verbose()
   printf("\n");
 
   printf("ciphertext:\n");
-  AES_ECB_encrypt(plaintext, key, buf, 16);
+  AES_ECB_encrypt(plaintext, key, buf, len);
   phex(buf);
   openFile(fPointer, buf, "encrypted.txt", "w");
   printf("\n");
@@ -123,7 +122,7 @@ static void test_ecb_verbose()
   printf("\n");
 
   printf("plain text:\n");
-  AES_ECB_decrypt(ciphertext, key, buf2, 16);
+  AES_ECB_decrypt(ciphertext, key, buf2, len);
   openFile(fPointer, buf2, "decrypted.txt", "w");
   phex(buf2);
   printf("\n");
